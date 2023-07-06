@@ -19,6 +19,7 @@ void closeSystem (FILE *);
 
 int main (void) {
 
+    FILE * cursor = fopen (FILENAME, "r");
     int choice;
 
     do {
@@ -29,16 +30,16 @@ int main (void) {
     switch (choice) {
 
         case 1:
-            //insertData ();
+            //insertData (cursor);
             break;
         case 2:
-            //deleteData ();
+            //deleteData (cursor);
             break;
         case 3:
-            //updateData ();
+            //updateData (cursor);
             break;
         case 4:
-            //closeSystem ();
+            //closeSystem (cursor);
             break;
     
         default:
@@ -73,6 +74,11 @@ int pickUp (void) {
 }
 
 void insertData (FILE * masterFile) {
+
+    if (masterFile == NULL)
+        masterFile = fopen (FILENAME, "w");
+    else
+        masterFile = fopen (FILENAME, "a");
 
 }
 
