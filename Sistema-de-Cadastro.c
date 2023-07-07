@@ -7,8 +7,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-
+//arquivo padrão para execução do sistema
 #define FILENAME "queriesDB.txt"
+
+typedef struct {
+    
+    char * studentName;
+    int studentAge;
+    int registration;
+    int schoolGrade;
+    int evaluationScore;
+} Data;
+
 
 int showMenu (void);
 int pickUp (void);
@@ -20,12 +30,7 @@ void closeSystem (FILE *);
 int main (void) {
 
     FILE * cursor = fopen (FILENAME, "r");
-    int choice;
-
-    do {
-        choice = showMenu ();
-        printf ("\n");
-    } while (!choice);
+    int choice = showMenu ();
 
     switch (choice) {
 
@@ -39,7 +44,7 @@ int main (void) {
             //updateData (cursor);
             break;
         case 4:
-            //closeSystem (cursor);
+            closeSystem (cursor);
             break;
     
         default:
@@ -63,7 +68,7 @@ int showMenu (void) {
         return inputValue;
     else {
         printf ("Tente novamente...\n");
-        return 0;
+        return showMenu ();
     }
 }
 
@@ -80,6 +85,7 @@ void insertData (FILE * masterFile) {
     else
         masterFile = fopen (FILENAME, "a");
 
+    
 }
 
 void deleteData (FILE * masterFile) {
@@ -92,4 +98,6 @@ void updateData (FILE * masterFile) {
 
 void closeSystem (FILE * masterFile) {
 
+    printf ("Finalizando...\n");
+    fclose(masterFile);
 }
