@@ -14,6 +14,8 @@
 #define DEL 2
 #define UPD 3
 #define CLS 4
+#define TRUE 1
+#define FALSE 0
 
 typedef struct {
     
@@ -27,6 +29,9 @@ typedef struct {
 
 int showMenu (void);
 int pickUp (void);
+int fileLineExist (FILE *);
+int fileLineSearch (FILE *, int);
+int registrationExist (FILE *, int);
 void insertData (FILE *);
 void deleteData (FILE *);
 void updateData (FILE *);
@@ -34,12 +39,11 @@ void closeSystem (FILE *);
 
 int main (void) {
 
-    FILE * cursor;
     int choice;
 
     do {
 
-        cursor = fopen (FILE_NAME, "r");
+        FILE * cursor = fopen (FILE_NAME, "r");
         choice = showMenu ();
 
         switch (choice) {
@@ -89,6 +93,48 @@ int pickUp (void) {
     return aux;
 }
 
+int fileLineExist (FILE * masterFile) {
+
+    char readLines[MAX_LEN];
+
+    rewind (masterFile);
+
+    if (fgets(readLines, sizeof(readLines), masterFile) != NULL)
+        return TRUE;
+    return FALSE;
+}
+
+int fileLineSearch (FILE * masterFile, int registration) {
+
+    char readLines[MAX_LEN], registrationParseString[10];
+    sprintf (registrationParseString, "%d", registration);
+    int line = 0;
+
+    rewind (masterFile);
+
+    while (fgets(readLines, sizeof(readLines), masterFile) != NULL)
+        if (strstr(readLines, registrationParseString) == NULL)
+            line++;
+
+    return line;
+}
+
+int registrationExist(FILE * masterFile, int registration) {
+
+    char readLine[MAX_LEN];
+    char registrationParseString[10]; // padrão de matrícula com 6 dígitos
+
+    sprintf(registrationParseString, "%d", registration);
+
+    rewind (masterFile); // Voltar para o início do arquivo
+
+    while (fgets(readLine, sizeof(readLine), masterFile) != NULL)
+        if (strstr(readLine, registrationParseString) != NULL)
+            return TRUE;
+
+    return FALSE;
+}
+
 void insertData (FILE * masterFile) {
 
     if (masterFile == NULL)
@@ -99,69 +145,98 @@ void insertData (FILE * masterFile) {
     Data student;
 
     printf ("Insira os dados do aluno (um aluno por vez):");
+    printf ("\nMatricula: "); scanf ("%d", &student.registration);
+
+    if (registrationExist (masterFile, student.registration)) {
+
+        printf ("Essa matricula ja existe, tente novamente...\n");
+        return;
+    }
 
     printf ("\nNome: "); scanf ("%s", student.studentName);
     printf ("\nIdade: "); scanf ("%d", &student.studentAge);
-    printf ("\nMatricula: "); scanf ("%d", &student.registration);
     printf ("\nSemestre: "); scanf ("%d", &student.schoolSemester);
     printf ("\nNota do Exame: "); scanf ("%f", &student.evaluationScore);
 
-    fprintf (masterFile, "Nome: %s | Idade: %d | Matricula: %d | Semestre: %d | Nota do Exame: %.2f\n",
-    student.studentName, student.studentAge, student.registration, student.schoolSemester, student.evaluationScore);
-    
+    fprintf (masterFile, "Matricula: %d | Nome: %s | Idade: %d | Semestre: %d | Nota do Exame: %.2f\n",
+    student.registration, student.studentName, student.studentAge, student.schoolSemester, student.evaluationScore);
+        
     rewind (masterFile);
+    fclose (masterFile);
 }
 
-void deleteData (FILE * masterFile) {
+void deleteData(FILE * masterFile) {
 
     if (masterFile == NULL) {
 
-        printf ("Falha ao abrir arquivo.\n");
+        printf("Falha ao abrir arquivo ou arquivo nao foi criado.\n");
         return;
     }
 
-    char line[MAX_LEN];
-    char registrationRemoved[7]; int registrationScanned; //padrão de matrícula com 6 dígitos
-    int registrationFound = 0;
+    if (fileLineExist (masterFile)) {
 
-    printf ("Digite a matricula do aluno a ser removido: ");
-    scanf ("%d", &registrationScanned); sprintf (registrationRemoved, "%d", registrationScanned);
+        printf("Digite a matricula do aluno a ser removido: ");
+        int registrationScanned; scanf("%d", &registrationScanned);
 
-    FILE * copyAndPaste = fopen ("temp.txt", "w");
+        if (!registrationExist(masterFile, registrationScanned)) {
 
-    if (copyAndPaste == NULL) {
+            printf("A matricula inserida nao consta, tente novamente...\n");
+            return;
+        }
 
-        printf ("Falha ao criar arquivo auxiliar.\n");
-        return;
-    }
+        char lineFile[MAX_LEN], registrationRemoved[10]; // padrão de matrícula com 6 dígitos
 
-    while (fgets (line, sizeof (line), masterFile) != NULL) {
-        
-        if (strstr(line, registrationRemoved) == NULL)
-            fputs (line, copyAndPaste);
-        else
-            registrationFound++;
-    }
+        sprintf(registrationRemoved, "%d", registrationScanned);
 
-    if (registrationFound)
-        printf ("Removido com sucesso.\n");
-    else
-        printf ("Matricula nao foi cadastrada.\n");
+        FILE * copyAndPaste = fopen("temp.txt", "w");
 
-    fclose (masterFile);
-    fclose (copyAndPaste);
+        if (copyAndPaste == NULL) {
 
-    remove (FILE_NAME);
-    rename ("temp.txt", FILE_NAME);
+            printf("Falha ao criar arquivo auxiliar.\n");
+            return;
+        }
+
+        rewind (masterFile); // Voltar para o início do arquivo
+
+        while (fgets(lineFile, sizeof(lineFile), masterFile) != NULL)
+            if (strstr(lineFile, registrationRemoved) == NULL)
+                fputs(lineFile, copyAndPaste);
+
+        fclose(masterFile);
+        fclose(copyAndPaste);
+
+        printf("Removido com sucesso.\n");
+
+        remove(FILE_NAME);
+        rename("temp.txt", FILE_NAME);
+    } else
+        printf ("Arquivo sem cadastros...\n");
 }
 
 void updateData (FILE * masterFile) {
 
     if (masterFile == NULL) {
 
-        printf ("Falha ao abrir arquivo.\n");
+        printf("Falha ao abrir arquivo ou arquivo nao foi criado.\n");
         return;
-    }
+    } else
+        masterFile = fopen (FILE_NAME, "r+");
+
+    if (fileLineExist (masterFile)) {
+
+        printf ("Digite a matricula do aluno a ser atualizado: ");
+        int registrationScanned; scanf ("%d", &registrationScanned);
+
+        if (!registrationExist (masterFile, registrationScanned)) {
+
+            printf ("A matricula inserida nao consta, tente novamente...\n");
+            return;
+        }
+
+        fseek (masterFile, fileLineSearch (masterFile, registrationScanned), SEEK_SET);
+        //continuar a partir daqui
+    } else
+        printf ("Arquivo sem cadastros...\n");
 }
 
 void closeSystem (FILE * masterFile) {
